@@ -1,0 +1,20 @@
+[project]
+name = "b2b-customer-360-platform"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "faker>=40.36.0",
+    "pandas>=3.0.5",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
