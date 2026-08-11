@@ -1,23 +1,35 @@
-import json
 from pathlib import Path
 import pandas as pd
 
 
 def load_selected_fields_summary() -> str:
-    """Reads selected_salesforce_fields.csv and builds a markdown list of required fields."""
+    """Reads selected_salesforce_fields.csv and builds a clean markdown list of required fields."""
     csv_path = Path("docs/requirements/selected_salesforce_fields.csv")
     if not csv_path.exists():
-        return (
-            "_Field selection CSV not found. Run 03_parse_field_selection.py first._\n"
-        )
+        return "_Field selection CSV not found. Run 03_parse_field_selection.py first._\n"
 
     df = pd.read_csv(csv_path)
     required_df = df[df["Selected for Ingestion"] == "Required"]
 
     output_lines = []
     for obj_name, group in required_df.groupby("Object"):
-        field_list = ", ".join([f"`{field}`" for field in group["Field API Name"]])
-        output_lines.append(f"- **{obj_name}**: {field_list}")
+        direct_fields = group[group["Field Type"] == "Direct"][
+            "Field API Name"
+        ].tolist()
+        rel_fields = group[group["Field Type"] == "Relationship Traversal"][
+            "Field API Name"
+        ].tolist()
+
+        formatted_direct = ", ".join([f"`{f}`" for f in direct_fields])
+        line = f"- **{obj_name}** ({len(group)} total): {formatted_direct}"
+
+        if rel_fields:
+            formatted_rel = ", ".join([f"`{f}`" for f in rel_fields])
+            line += (
+                f" | *SOQL Relationship Traversal for Enrichment:* {formatted_rel}"
+            )
+
+        output_lines.append(line)
 
     return "\n".join(output_lines)
 
@@ -26,11 +38,12 @@ def generate_phase1_md():
     fields_summary_md = load_selected_fields_summary()
 
     content = rf"""# Phase 1 — Source Discovery & Requirements Freeze
+
     ## 1. Project Overview & Objectives
     The **B2B Customer 360 & Real-Time Sales Analytics Platform** integrates fragmented B2B customer data across three primary layers:
-    1. **Salesforce CRM**: Account, Contact, Lead, Opportunity, User, and OpportunityContactRole records.
-    2. **Real-Time Digital Events**: High-frequency streaming events (page views, demo requests, content downloads).
-    3. **PostgreSQL Reference Data**: Product catalogs, product categories, and pricing tiers.
+    1. **Salesforce CRM**: Core entity extraction (Account, Contact, Lead, Opportunity, User, OpportunityContactRole).
+    2. **Real-Time Digital Events**: Streaming interactions (page views, demo requests, content downloads).
+    3. **PostgreSQL Reference Data**: Reference and lookup enrichment for downstream analytics.
 
     ---
 
@@ -53,24 +66,42 @@ def generate_phase1_md():
 
     {fields_summary_md}
 
-    ### Delta Loading Strategy
-    All six core objects contain the standard Salesforce audit timestamp `SystemModstamp`. This field will be used as the high-water mark for incremental CDC ingestion during Bronze layer extraction.
+    > **Field Modeling Note:** Direct fields represent native object attributes stored in Salesforce. `UserRole.Name` is categorized as a SOQL relationship traversal field used for downstream sales representative role enrichment during Bronze-to-Silver transformation.
 
-    ---
+    ### Explicit Relationship Topology
+    To support Phase 2 canonical data modeling, the exact foreign key relationships among the six core objects are defined as follows:
 
-    ## 4. Real-Time Event Scope
+    ```text
+    Account (Id)
+    ├── 1:N ──> Contact (AccountId)
+    └── 1:N ──> Opportunity (AccountId)
 
-    Digital events will be ingested via JSON format with a normalized envelope:
+    Opportunity (Id)
+    └── 1:N ──> OpportunityContactRole (OpportunityId)
+
+    Contact (Id)
+    └── 1:N ──> OpportunityContactRole (ContactId)
+
+    User (Id)
+    ├── 1:N ──> Account (OwnerId)
+    └── 1:N ──> Opportunity (OwnerId)
+
+    Lead (Conversion Keys — Nullable)
+    ├── 0..1 ──> Account     via ConvertedAccountId
+    ├── 0..1 ──> Contact     via ConvertedContactId
+    └── 0..1 ──> Opportunity via ConvertedOpportunityId
 
     ```json
     {{
     "event_id": "evt_1020304050",
     "event_type": "pricing_page_view",
     "timestamp": "2026-08-11T17:30:00Z",
-    "user_identity": {{
+    "identity_resolution": {{
+        "sfdc_contact_id": "0038c00002A1xBCAAZ",
+        "sfdc_account_id": "0018c00002A1xACAAZ",
+        "anonymous_id": "anon_usr_998877",
         "email": "stakeholder@acme.com",
-        "domain": "acme.com",
-        "sfdc_contact_id": "0038c00002A1xBCAAZ"
+        "domain": "acme.com"
     }},
     "attributes": {{
         "url": "/pricing",
@@ -85,7 +116,7 @@ def generate_phase1_md():
     doc_path = output_dir / "phase-1-source-discovery.md"
     doc_path.write_text(content, encoding="utf-8")
 
-    print(f"✅ Phase 1 Freeze Document successfully generated at: {doc_path}")
+    print(f"✅ Revised Phase 1 Freeze Document saved at: {doc_path}")
 
 if __name__ == "__main__":
     generate_phase1_md()
