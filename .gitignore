@@ -16,3 +16,7 @@ airflow/airflow.db
 dbt/target/
 dbt/logs/
 dbt/dbt_packages/
+
+docs
+
+metadata_raw
