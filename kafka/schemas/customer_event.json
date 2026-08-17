@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CustomerEvent",
+  "type": "object",
+  "required": ["event_id", "event_type", "timestamp", "identity_resolution", "attributes"],
+  "properties": {
+    "event_id": { "type": "string", "pattern": "^evt_[a-zA-Z0-9_-]+$" },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "website_visit",
+        "product_page_view",
+        "pricing_page_view",
+        "documentation_view",
+        "demo_request",
+        "brochure_download"
+      ]
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "identity_resolution": {
+      "type": "object",
+      "properties": {
+        "sfdc_contact_id": { "type": ["string", "null"] },
+        "sfdc_account_id": { "type": ["string", "null"] },
+        "anonymous_id": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "domain": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

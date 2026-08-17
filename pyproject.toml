@@ -5,12 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "confluent-kafka>=2.15.0",
     "faker>=40.36.0",
+    "jsonschema>=4.26.0",
     "loguru>=0.7.3",
     "pandas>=3.0.5",
     "pyarrow>=25.0.1",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.15.0",
+    "pyspark>=3.5.0,<3.6.0",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
     "simple-salesforce>=1.12.10",
