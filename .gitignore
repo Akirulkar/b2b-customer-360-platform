@@ -7,6 +7,8 @@ __pycache__/
 data/raw/
 data/processed/
 data/bronze
+data/gold
+data/silver
 
 spark-warehouse/
 metastore_db/
