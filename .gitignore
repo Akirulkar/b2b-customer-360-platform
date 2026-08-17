@@ -6,6 +6,7 @@ __pycache__/
 
 data/raw/
 data/processed/
+data/bronze
 
 spark-warehouse/
 metastore_db/
@@ -20,3 +21,6 @@ dbt/dbt_packages/
 docs
 
 metadata_raw
+
+logs/
+*.log
