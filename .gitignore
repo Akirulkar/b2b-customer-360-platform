@@ -4,7 +4,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 
-data/raw/
+data/checkpoints/
 data/processed/
 data/bronze
 data/gold
